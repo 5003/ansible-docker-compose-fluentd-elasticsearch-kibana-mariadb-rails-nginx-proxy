@@ -1,0 +1,3 @@
+[submodule "apps/rails"]
+	path = apps/rails
+	url = https://github.com/akurkin/lightweight_rails_app.git

@@ -1,0 +1,36 @@
+---
+- name: define and apply common packages
+  set_fact:
+    common_popular_package:
+      - curl
+      - wget
+      - git
+      - python-pip
+
+- block:
+    - apt: update_cache=yes cache_valid_time=86400
+      become: yes
+      name: ---
+    - apt: name={{ item }} state=present
+      become: yes
+      with_items:
+        - python-apt
+        - "{{ common_popular_package }}"
+      name: ---
+  when: ansible_distribution | lower == 'ubuntu'
+
+- block:
+    - command: yum clean all
+      become: yes
+      name: ---
+    - yum: name={{ item }} state=present
+      become: yes
+      with_items:
+        - epel-release
+        - "{{ common_popular_package }}"
+      name: ---
+  when: ansible_distribution | lower == 'centos'
+
+- name: upgrading pip
+  become: yes
+  command: pip install --upgrade pip

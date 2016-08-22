@@ -1,0 +1,48 @@
+---
+- name: define and install engine
+  set_fact:
+    engine_version: "{{ docker_engine_version | default('1.11.2') }}"
+    builds_selected: "{{ docker_builds_selected | default('main') }}"
+    key_servers:
+      - ha.pool.sks-keyservers.net
+      - pgp.mit.edu
+      - keyserver.ubuntu.com
+    key_id: "58118E89F3A912897C070ADBF76221572C52609D"
+
+- block:
+  - apt_key: keyserver={{ item }} id={{ key_id }}
+    with_items: "{{ key_servers }}"
+    become: yes
+    name: ---
+  - command: dpkg --print-architecture
+    register: dpkg_print_arch
+    name: ---
+  - template: src=repo/apt/docker.list dest=/etc/apt/sources.list.d/
+    become: yes
+    name: ---
+  - apt: update_cache=yes
+    become: yes
+    name: ---
+  - apt: name=docker-engine={{ engine_version }}-0~{{ ansible_distribution_release }} state=present
+    become: yes
+    name: ---
+  when: ansible_distribution | lower == 'ubuntu'
+
+- block:
+  - template: src=repo/yum/docker.repo dest=/etc/yum.repos.d/docker-{{ builds_selected }}.repo
+    become: yes
+    name: ---
+  - yum: name=docker-engine-{{ engine_version }} state=present
+    become: yes
+    name: ---
+  when: ansible_distribution | lower == 'centos'
+
+- name: start service
+  service: name=docker state=started enabled=yes
+
+- name: install compose
+  pip: name={{ item }} state=present
+  become: yes
+  with_items:
+    - docker-py
+    - docker-compose

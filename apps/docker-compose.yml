@@ -1,0 +1,61 @@
+version: '2'
+services:
+  fluentd:
+    build: ./fluentd/
+    ports:
+      - 24224:24224
+
+  elasticsearch:
+    build: ./elasticsearch/
+    ports:
+      - 9200:9200
+    depends_on:
+      - fluentd
+
+  kibana:
+    build: ./kibana/
+    ports:
+      - 5601:5601
+    depends_on:
+      - fluentd
+      - elasticsearch
+
+  db:
+    image: mariadb:5
+    environment:
+      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+    volumes:
+      - stored:/var/lib/mysql/
+
+  rails:
+    build: ./rails/
+    command: bundle exec unicorn --port 3000
+    ports:
+      - 3000:3000
+    depends_on:
+      - fluentd
+      - db
+    environment:
+      RAILS_ENV: $RAILS_ENV
+      # ref ==> http://stackoverflow.com/questions/33788818/docker-mysql-cant-connect-to-socket
+      DB_PORT_3306_TCP_ADDR: db
+    volumes_from:
+      - db
+    logging:
+      driver: fluentd
+
+  nginx:
+    build: ./nginx/
+    ports:
+      - 80:80
+    depends_on:
+      - fluentd
+      - elasticsearch
+      - kibana
+      - rails
+    logging:
+      driver: fluentd
+
+volumes:
+  stored:
+    driver: local

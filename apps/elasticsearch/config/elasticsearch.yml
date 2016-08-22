@@ -1,0 +1,9 @@
+cluster:
+  name: apps
+node:
+  name: ${HOSTNAME}
+network:
+  host: 0.0.0.0
+insecure:
+  allow:
+    root: true
