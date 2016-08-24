@@ -48,6 +48,14 @@
   tags:
     - engine
 
+- name: ---
+  user: name={{ ansible_user }} group=docker append=yes
+  become: yes
+  when: ansible_user is defined and ansible_user != 'root'
+  notify: restart service
+  tags:
+    - engine
+
 - name: install compose
   pip: name={{ item }} state=present
   become: yes
